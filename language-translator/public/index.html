@@ -39,17 +39,18 @@
     .char-count { font-size: 0.8rem; color: #4b5563; text-align: right; margin-top: 4px; }
     .realtime-badge { display: inline-block; width: 8px; height: 8px; background: #34d399; border-radius: 50%; margin-right: 6px; animation: pulse 1.5s infinite; }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    .loading { color: #94a3b8; font-style: italic; }
   </style>
 </head>
 <body>
   <header>
     <h1>🌐 Real-Time Language Translator</h1>
-    <p>Instant translation powered by WebSockets — type and translate live</p>
+    <p>Instant translation powered by Google Translate — type and translate live</p>
   </header>
 
   <div class="container">
     <div class="controls">
-      <div class="status" id="statusBadge">⚪ Connecting...</div>
+      <div class="status active" id="statusBadge">🟢 Ready</div>
       <div style="margin-left:auto; color:#94a3b8; font-size:0.85rem;">
         <span class="realtime-badge"></span>Real-time mode active
       </div>
@@ -61,6 +62,17 @@
         <h3>Source</h3>
         <select id="sourceLang">
           <option value="en">English</option>
+          <option value="es">Spanish</option>
+          <option value="fr">French</option>
+          <option value="de">German</option>
+          <option value="it">Italian</option>
+          <option value="pt">Portuguese</option>
+          <option value="ja">Japanese</option>
+          <option value="zh">Chinese</option>
+          <option value="ar">Arabic</option>
+          <option value="hi">Hindi</option>
+          <option value="ru">Russian</option>
+          <option value="ko">Korean</option>
         </select>
         <textarea id="sourceText" placeholder="Type text to translate..."></textarea>
         <div class="char-count"><span id="charCount">0</span> characters</div>
@@ -69,7 +81,20 @@
       <!-- Target -->
       <div class="panel">
         <h3>Translation</h3>
-        <select id="targetLang"></select>
+        <select id="targetLang">
+          <option value="es">Spanish</option>
+          <option value="fr">French</option>
+          <option value="de">German</option>
+          <option value="it">Italian</option>
+          <option value="pt">Portuguese</option>
+          <option value="ja">Japanese</option>
+          <option value="zh">Chinese</option>
+          <option value="ar">Arabic</option>
+          <option value="hi">Hindi</option>
+          <option value="ru">Russian</option>
+          <option value="ko">Korean</option>
+          <option value="en">English</option>
+        </select>
         <textarea id="translatedText" readonly placeholder="Translation will appear here..."></textarea>
         <div class="char-count" id="langLabel"></div>
       </div>
@@ -91,66 +116,84 @@
   </div>
 
   <script>
-    const socket = io();
-    let history = [];
+    // Translation done directly from browser using Google Translate API
+    // This avoids server-side IP blocks on free hosting
+    const LANG_NAMES = {
+      en:'English', es:'Spanish', fr:'French', de:'German', it:'Italian',
+      pt:'Portuguese', ja:'Japanese', zh:'Chinese', ar:'Arabic',
+      hi:'Hindi', ru:'Russian', ko:'Korean'
+    };
+
+    let translationHistory = [];
     let typingTimer;
 
-    socket.on('connect', () => {
-      document.getElementById('statusBadge').textContent = '🟢 Connected';
-      document.getElementById('statusBadge').classList.add('active');
-    });
+    // Core translate function — calls Google Translate from the browser
+    async function googleTranslate(text, targetLang, sourceLang = 'en') {
+      if (targetLang === sourceLang) return text;
+      try {
+        const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceLang}&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        return data[0].map(item => item[0]).filter(Boolean).join('');
+      } catch (e) {
+        return null;
+      }
+    }
 
-    socket.on('disconnect', () => {
-      document.getElementById('statusBadge').textContent = '🔴 Disconnected';
-      document.getElementById('statusBadge').classList.remove('active');
-    });
-
-    socket.on('translation', (data) => {
-      document.getElementById('translatedText').value = data.translated;
-      document.getElementById('langLabel').textContent = `Translated to: ${data.language}`;
-      addToHistory(data);
-    });
-
-    // Load languages
-    fetch('/api/languages').then(r => r.json()).then(data => {
-      const sel = document.getElementById('targetLang');
-      Object.entries(data.languages).forEach(([code, name]) => {
-        if (code !== 'en') {
-          const opt = document.createElement('option');
-          opt.value = code; opt.textContent = name;
-          sel.appendChild(opt);
-        }
-      });
-    });
-
-    // Real-time translate on typing (debounced)
-    document.getElementById('sourceText').addEventListener('input', function() {
+    // Real-time translate on typing (debounced 600ms)
+    document.getElementById('sourceText').addEventListener('input', function () {
       document.getElementById('charCount').textContent = this.value.length;
       clearTimeout(typingTimer);
       if (this.value.trim()) {
-        typingTimer = setTimeout(() => translateNow(true), 500);
+        typingTimer = setTimeout(() => translateNow(), 600);
       } else {
         document.getElementById('translatedText').value = '';
+        document.getElementById('langLabel').textContent = '';
       }
     });
 
-    function translateNow(realtime = false) {
+    async function translateNow() {
       const text = document.getElementById('sourceText').value.trim();
       const targetLang = document.getElementById('targetLang').value;
       const sourceLang = document.getElementById('sourceLang').value;
       if (!text) return;
-      if (realtime) {
-        socket.emit('translate', { text, targetLang, sourceLang });
+
+      document.getElementById('translatedText').value = '⏳ Translating...';
+      document.getElementById('statusBadge').textContent = '🔄 Translating...';
+
+      const translated = await googleTranslate(text, targetLang, sourceLang);
+
+      if (translated) {
+        document.getElementById('translatedText').value = translated;
+        document.getElementById('langLabel').textContent = `Translated to: ${LANG_NAMES[targetLang]}`;
+        document.getElementById('statusBadge').textContent = '🟢 Ready';
+        document.getElementById('statusBadge').classList.add('active');
+
+        // Add to history
+        translationHistory.unshift({
+          original: text, translated,
+          sourceLang, language: LANG_NAMES[targetLang],
+          timestamp: new Date().toISOString()
+        });
+        if (translationHistory.length > 20) translationHistory.pop();
+        renderHistory();
       } else {
-        socket.emit('translate', { text, targetLang, sourceLang });
+        document.getElementById('translatedText').value = '❌ Translation failed. Please try again.';
+        document.getElementById('statusBadge').textContent = '🔴 Error';
       }
     }
 
     function swapLanguages() {
+      const srcSel = document.getElementById('sourceLang');
+      const tgtSel = document.getElementById('targetLang');
       const translated = document.getElementById('translatedText').value;
+      const srcVal = srcSel.value;
+      srcSel.value = tgtSel.value;
+      tgtSel.value = srcVal;
       document.getElementById('sourceText').value = translated;
       document.getElementById('translatedText').value = '';
       document.getElementById('charCount').textContent = translated.length;
+      if (translated.trim()) translateNow();
     }
 
     function clearAll() {
@@ -162,34 +205,27 @@
 
     function copyTranslation() {
       const text = document.getElementById('translatedText').value;
-      if (text) {
-        navigator.clipboard.writeText(text);
-        alert('Translation copied to clipboard!');
+      if (text && !text.startsWith('⏳') && !text.startsWith('❌')) {
+        navigator.clipboard.writeText(text).then(() => alert('Copied to clipboard!'));
       }
-    }
-
-    function addToHistory(data) {
-      history.unshift(data);
-      if (history.length > 20) history.pop();
-      renderHistory();
     }
 
     function renderHistory() {
       const container = document.getElementById('historyContainer');
-      if (history.length === 0) {
+      if (translationHistory.length === 0) {
         container.innerHTML = '<div class="empty">No translations yet</div>';
         return;
       }
-      container.innerHTML = history.map(h => `
+      container.innerHTML = translationHistory.map(h => `
         <div class="history-item">
           <div class="orig">📝 ${h.original}</div>
           <div class="trans">💬 ${h.translated}</div>
-          <div class="meta">${h.sourceLang} → ${h.language} · ${new Date(h.timestamp).toLocaleTimeString()}</div>
+          <div class="meta">${LANG_NAMES[h.sourceLang] || h.sourceLang} → ${h.language} · ${new Date(h.timestamp).toLocaleTimeString()}</div>
         </div>`).join('');
     }
 
     function clearHistory() {
-      history = [];
+      translationHistory = [];
       renderHistory();
     }
   </script>
