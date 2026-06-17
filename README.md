@@ -1,12 +1,25 @@
 # App Development Projects
 
-4 full-stack Node.js projects built with Express, Socket.IO, and vanilla JavaScript.
+4 full-stack Node.js projects built with Express, Socket.IO, and vanilla JavaScript — all deployed live on Render.
+
+---
+
+## 🚀 Live Demo Links
+
+| # | Project | Live URL |
+|---|---------|----------|
+| ⛓️ | Blockchain Voting System | [blockchain-voting-ufxr.onrender.com](https://blockchain-voting-ufxr.onrender.com) |
+| 🌐 | Real-Time Language Translator | [language-translator-0uqu.onrender.com](https://language-translator-0uqu.onrender.com) |
+| 🎪 | Virtual Event Platform | [virtual-event-platform-18j8.onrender.com](https://virtual-event-platform-18j8.onrender.com) |
+| 📰 | Personalized News Aggregator | [news-aggregator-y1rn.onrender.com](https://news-aggregator-y1rn.onrender.com) |
+
+> ⚠️ Free Render instances spin down after 15 mins of inactivity. First load may take 30–50 seconds.
 
 ---
 
 ## Projects
 
-### 1. ⛓️ Blockchain Voting System — `blockchain-voting/` — Port 3001
+### 1. ⛓️ Blockchain Voting System — `blockchain-voting/` — [Live](https://blockchain-voting-ufxr.onrender.com)
 A tamper-proof voting app built on a local SHA-256 blockchain.
 
 **Features**
@@ -15,7 +28,7 @@ A tamper-proof voting app built on a local SHA-256 blockchain.
 - Live results with percentage bars and winner tracking
 - Full blockchain ledger viewer in the UI
 
-**Run**
+**Run Locally**
 ```bash
 cd blockchain-voting
 npm install
@@ -25,7 +38,7 @@ npm start
 
 ---
 
-### 2. 🌐 Real-Time Language Translator — `language-translator/` — Port 3002
+### 2. 🌐 Real-Time Language Translator — `language-translator/` — [Live](https://language-translator-0uqu.onrender.com)
 Instant translation with WebSocket-powered live updates as you type.
 
 **Features**
@@ -33,9 +46,9 @@ Instant translation with WebSocket-powered live updates as you type.
 - Real-time translation via Socket.IO (debounced on keypress)
 - Translation history (last 20 entries)
 - Swap languages, copy to clipboard, connection status indicator
-- Plug in LibreTranslate / DeepL / Google Translate API for production
+- Powered by Google Translate unofficial API
 
-**Run**
+**Run Locally**
 ```bash
 cd language-translator
 npm install
@@ -45,7 +58,7 @@ npm start
 
 ---
 
-### 3. 🎪 Virtual Event Platform — `virtual-event-platform/` — Port 3003
+### 3. 🎪 Virtual Event Platform — `virtual-event-platform/` — [Live](https://virtual-event-platform-18j8.onrender.com)
 A full virtual event hosting platform with real-time chat and presence.
 
 **Features**
@@ -56,7 +69,7 @@ A full virtual event hosting platform with real-time chat and presence.
 - Category filters, search, status badges (Live / Upcoming)
 - Event capacity enforcement
 
-**Run**
+**Run Locally**
 ```bash
 cd virtual-event-platform
 npm install
@@ -66,7 +79,7 @@ npm start
 
 ---
 
-### 4. 📰 Personalized News Aggregator — `news-aggregator/` — Port 3004
+### 4. 📰 Personalized News Aggregator — `news-aggregator/` — [Live](https://news-aggregator-y1rn.onrender.com)
 A curated news feed with personalization, search, and bookmarks.
 
 **Features**
@@ -76,9 +89,8 @@ A curated news feed with personalization, search, and bookmarks.
 - Article detail modal with read time
 - Bookmark articles (persisted in localStorage)
 - Sort by Latest / Oldest / Quick Reads
-- Connect NewsAPI.org for live articles in production
 
-**Run**
+**Run Locally**
 ```bash
 cd news-aggregator
 npm install
@@ -89,8 +101,6 @@ npm start
 ---
 
 ## Quick Start — Install All
-
-From the `app-dev-projects/` root:
 
 ```bash
 npm run install:all
@@ -120,7 +130,7 @@ app-dev-projects/
 │   └── package.json
 │
 ├── language-translator/
-│   ├── src/server.js         # Express + Socket.IO, 12 languages
+│   ├── src/server.js         # Express + Socket.IO, Google Translate API
 │   ├── public/index.html     # Real-time translation UI
 │   └── package.json
 │
@@ -148,5 +158,7 @@ app-dev-projects/
 | Server | Express 4 |
 | Real-time | Socket.IO 4 |
 | Blockchain | Custom SHA-256 (crypto module) |
+| Translation | Google Translate API (unofficial) |
 | Frontend | Vanilla JS, HTML5, CSS3 |
 | Storage | In-memory + localStorage |
+| Deployment | Render (free tier) |
