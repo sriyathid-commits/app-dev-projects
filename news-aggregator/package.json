@@ -1,0 +1,12 @@
+{
+  "name": "personalized-news-aggregator",
+  "version": "1.0.0",
+  "description": "A personalized news aggregator with category filters, tag search, trending feed, and bookmarks",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}

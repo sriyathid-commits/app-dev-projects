@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Blockchain Voting System</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+    header { background: #1e293b; padding: 20px 40px; border-bottom: 2px solid #6366f1; }
+    header h1 { color: #818cf8; font-size: 1.8rem; }
+    header p { color: #94a3b8; font-size: 0.9rem; margin-top: 4px; }
+    .container { max-width: 900px; margin: 40px auto; padding: 0 20px; }
+    .card { background: #1e293b; border-radius: 12px; padding: 24px; margin-bottom: 24px; border: 1px solid #334155; }
+    .card h2 { color: #818cf8; margin-bottom: 16px; font-size: 1.2rem; }
+    .form-group { margin-bottom: 14px; }
+    label { display: block; margin-bottom: 6px; font-size: 0.9rem; color: #94a3b8; }
+    input, select { width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #475569; background: #0f172a; color: #e2e8f0; font-size: 0.95rem; }
+    button { background: #6366f1; color: white; padding: 10px 24px; border: none; border-radius: 8px; cursor: pointer; font-size: 0.95rem; transition: background 0.2s; }
+    button:hover { background: #4f46e5; }
+    .result-bar { display: flex; align-items: center; margin-bottom: 10px; gap: 12px; }
+    .result-bar span { min-width: 80px; }
+    .bar-track { flex: 1; background: #334155; border-radius: 4px; height: 22px; overflow: hidden; }
+    .bar-fill { height: 100%; background: #6366f1; border-radius: 4px; transition: width 0.5s; display: flex; align-items: center; padding-left: 8px; font-size: 0.8rem; }
+    .badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 0.8rem; }
+    .badge-green { background: #064e3b; color: #34d399; }
+    .badge-red { background: #7f1d1d; color: #fca5a5; }
+    #message { padding: 10px 14px; border-radius: 8px; margin-bottom: 14px; display: none; }
+    .msg-success { background: #064e3b; color: #34d399; }
+    .msg-error { background: #7f1d1d; color: #fca5a5; }
+    .chain-block { background: #0f172a; border-radius: 8px; padding: 14px; margin-bottom: 10px; border-left: 4px solid #6366f1; font-family: monospace; font-size: 0.8rem; word-break: break-all; }
+    .chain-block .hash { color: #818cf8; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>⛓️ Blockchain Voting System</h1>
+    <p>Secure, transparent, tamper-proof voting on a local blockchain</p>
+  </header>
+
+  <div class="container">
+    <div id="message"></div>
+
+    <!-- Vote Form -->
+    <div class="card">
+      <h2>🗳️ Cast Your Vote</h2>
+      <div class="form-group">
+        <label>Voter ID (unique identifier)</label>
+        <input type="text" id="voterId" placeholder="e.g. voter_001" />
+      </div>
+      <div class="form-group">
+        <label>Select Candidate</label>
+        <select id="candidateSelect"></select>
+      </div>
+      <button onclick="castVote()">Submit Vote</button>
+    </div>
+
+    <!-- Results -->
+    <div class="card">
+      <h2>📊 Live Results <span id="chainStatus"></span></h2>
+      <div id="totalVotes" style="color:#94a3b8; margin-bottom:14px; font-size:0.9rem;"></div>
+      <div id="resultsContainer"></div>
+      <div id="winner" style="margin-top:14px; font-size:1rem; color:#fbbf24;"></div>
+      <button onclick="loadResults()" style="margin-top:14px; background:#334155;">🔄 Refresh</button>
+    </div>
+
+    <!-- Blockchain -->
+    <div class="card">
+      <h2>🔗 Blockchain Ledger</h2>
+      <button onclick="loadChain()" style="background:#334155; margin-bottom:14px;">View Chain</button>
+      <div id="chainContainer"></div>
+    </div>
+  </div>
+
+  <script>
+    async function loadCandidates() {
+      const res = await fetch('/api/candidates');
+      const data = await res.json();
+      const sel = document.getElementById('candidateSelect');
+      sel.innerHTML = data.candidates.map(c => `<option value="${c}">${c}</option>`).join('');
+    }
+
+    async function castVote() {
+      const voterId = document.getElementById('voterId').value.trim();
+      const candidate = document.getElementById('candidateSelect').value;
+      if (!voterId) return showMessage('Please enter a Voter ID.', false);
+
+      const res = await fetch('/api/vote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ voterId, candidate }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showMessage(`Vote cast for ${candidate}! Block #${data.block.index} added to chain.`, true);
+        loadResults();
+      } else {
+        showMessage(data.error, false);
+      }
+    }
+
+    async function loadResults() {
+      const res = await fetch('/api/results');
+      const data = await res.json();
+      const total = data.totalVotes;
+      document.getElementById('totalVotes').textContent = `Total votes cast: ${total}`;
+      document.getElementById('chainStatus').innerHTML =
+        `<span class="badge ${data.chainValid ? 'badge-green' : 'badge-red'}">${data.chainValid ? '✔ Chain Valid' : '✘ Chain Tampered'}</span>`;
+
+      const container = document.getElementById('resultsContainer');
+      container.innerHTML = Object.entries(data.results).map(([c, v]) => {
+        const pct = total > 0 ? Math.round((v / total) * 100) : 0;
+        return `<div class="result-bar">
+          <span>${c}</span>
+          <div class="bar-track"><div class="bar-fill" style="width:${pct}%">${pct}%</div></div>
+          <span>${v} vote${v !== 1 ? 's' : ''}</span>
+        </div>`;
+      }).join('');
+
+      document.getElementById('winner').textContent =
+        total > 0 ? `🏆 Current Leader: ${data.winner.candidate} (${data.winner.votes} votes)` : '';
+    }
+
+    async function loadChain() {
+      const res = await fetch('/api/chain');
+      const data = await res.json();
+      const container = document.getElementById('chainContainer');
+      container.innerHTML = data.chain.map(b => `
+        <div class="chain-block">
+          <strong>Block #${b.index}</strong> — ${b.timestamp}<br/>
+          Data: ${JSON.stringify(b.data)}<br/>
+          <span class="hash">Hash: ${b.hash}</span><br/>
+          Prev: ${b.previousHash}
+        </div>`).join('');
+    }
+
+    function showMessage(msg, success) {
+      const el = document.getElementById('message');
+      el.textContent = msg;
+      el.className = success ? 'msg-success' : 'msg-error';
+      el.style.display = 'block';
+      setTimeout(() => el.style.display = 'none', 4000);
+    }
+
+    loadCandidates();
+    loadResults();
+  </script>
+</body>
+</html>

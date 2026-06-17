@@ -1,0 +1,18 @@
+{
+  "name": "app-dev-projects",
+  "version": "1.0.0",
+  "description": "4 full-stack app development projects in one monorepo",
+  "scripts": {
+    "install:all": "npm install --prefix blockchain-voting && npm install --prefix language-translator && npm install --prefix virtual-event-platform && npm install --prefix news-aggregator",
+    "start:voting": "npm start --prefix blockchain-voting",
+    "start:translator": "npm start --prefix language-translator",
+    "start:events": "npm start --prefix virtual-event-platform",
+    "start:news": "npm start --prefix news-aggregator"
+  },
+  "workspaces": [
+    "blockchain-voting",
+    "language-translator",
+    "virtual-event-platform",
+    "news-aggregator"
+  ]
+}

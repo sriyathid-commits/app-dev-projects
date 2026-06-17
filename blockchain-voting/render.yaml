@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: blockchain-voting-system
+    runtime: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: PORT
+        value: 3001
+    plan: free

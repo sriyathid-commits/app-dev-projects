@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Personalized News Aggregator</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Segoe UI',sans-serif;background:#09090b;color:#e2e8f0;min-height:100vh}
+    header{background:#111113;padding:16px 40px;border-bottom:2px solid #f59e0b;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+    header h1{color:#fbbf24;font-size:1.7rem}
+    header p{color:#94a3b8;font-size:0.85rem;margin-top:3px}
+    .search-bar{display:flex;gap:8px;align-items:center}
+    .search-bar input{padding:8px 14px;border-radius:8px;border:1px solid #374151;background:#1c1c1e;color:#e2e8f0;font-size:0.9rem;width:240px}
+    .search-bar input:focus{outline:none;border-color:#f59e0b}
+    .search-bar button{padding:8px 16px;background:#f59e0b;border:none;border-radius:8px;color:#000;font-weight:600;cursor:pointer;font-size:0.9rem}
+    .layout{display:grid;grid-template-columns:240px 1fr;gap:24px;max-width:1200px;margin:28px auto;padding:0 20px}
+    @media(max-width:768px){.layout{grid-template-columns:1fr}}
+    /* Sidebar */
+    .sidebar{display:flex;flex-direction:column;gap:16px}
+    .sidebar-card{background:#111113;border-radius:12px;padding:18px;border:1px solid #27272a}
+    .sidebar-card h3{color:#fbbf24;font-size:0.95rem;margin-bottom:12px}
+    .cat-btn{display:flex;align-items:center;justify-content:space-between;width:100%;padding:8px 12px;background:transparent;border:1px solid #27272a;border-radius:8px;color:#94a3b8;cursor:pointer;font-size:0.88rem;margin-bottom:6px;transition:all .2s;text-align:left}
+    .cat-btn:hover{border-color:#f59e0b;color:#e2e8f0}
+    .cat-btn.active{background:#451a03;border-color:#f59e0b;color:#fbbf24}
+    .cat-btn .count{background:#27272a;padding:1px 7px;border-radius:10px;font-size:0.75rem}
+    .tag-cloud{display:flex;flex-wrap:wrap;gap:6px}
+    .tag-pill{padding:3px 10px;background:#1c1c1e;border:1px solid #374151;border-radius:20px;font-size:0.78rem;color:#94a3b8;cursor:pointer;transition:all .2s}
+    .tag-pill:hover{border-color:#f59e0b;color:#fbbf24}
+    .tag-pill.active{background:#451a03;border-color:#f59e0b;color:#fbbf24}
+    /* Main */
+    .top-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px}
+    .top-bar h2{font-size:1.1rem;color:#e2e8f0}
+    .sort-bar{display:flex;gap:8px;align-items:center}
+    .sort-bar select{padding:6px 10px;border-radius:8px;border:1px solid #374151;background:#1c1c1e;color:#e2e8f0;font-size:0.85rem}
+    .feed-toggle{display:flex;border:1px solid #374151;border-radius:8px;overflow:hidden}
+    .feed-toggle button{padding:6px 14px;background:transparent;border:none;color:#94a3b8;cursor:pointer;font-size:0.85rem;transition:all .2s}
+    .feed-toggle button.active{background:#451a03;color:#fbbf24}
+    .news-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px}
+    /* Article card */
+    .article-card{background:#111113;border-radius:12px;overflow:hidden;border:1px solid #27272a;cursor:pointer;transition:transform .2s,border-color .2s}
+    .article-card:hover{transform:translateY(-3px);border-color:#f59e0b}
+    .article-card img{width:100%;height:160px;object-fit:cover;background:#27272a}
+    .article-body{padding:14px}
+    .article-meta{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+    .article-cat{padding:2px 8px;border-radius:12px;font-size:0.72rem;font-weight:600}
+    .cat-Technology{background:#1e3a5f;color:#60a5fa}
+    .cat-Crypto{background:#1a2e05;color:#86efac}
+    .cat-Science{background:#1e1b4b;color:#a78bfa}
+    .cat-Business{background:#422006;color:#fb923c}
+    .cat-Health{background:#064e3b;color:#34d399}
+    .cat-Sports{background:#450a0a;color:#fca5a5}
+    .article-source{font-size:0.75rem;color:#6b7280}
+    .article-time{font-size:0.75rem;color:#6b7280;margin-left:auto}
+    .article-card h3{font-size:0.95rem;line-height:1.4;margin-bottom:8px;color:#f3f4f6}
+    .article-card p{font-size:0.83rem;color:#9ca3af;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+    .article-footer{display:flex;align-items:center;justify-content:space-between;margin-top:10px}
+    .read-time{font-size:0.75rem;color:#6b7280}
+    .trending-badge{padding:1px 8px;background:#92400e;color:#fcd34d;border-radius:10px;font-size:0.72rem}
+    .bookmark-btn{background:transparent;border:none;cursor:pointer;font-size:1rem;color:#6b7280;transition:color .2s}
+    .bookmark-btn.saved{color:#f59e0b}
+    /* Article Modal */
+    .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:flex-start;justify-content:center;z-index:100;padding:40px 20px;overflow-y:auto}
+    .modal-bg.open{display:flex}
+    .article-modal{background:#111113;border-radius:16px;max-width:700px;width:100%;border:1px solid #374151}
+    .article-modal img{width:100%;height:280px;object-fit:cover;border-radius:16px 16px 0 0}
+    .article-modal-body{padding:28px}
+    .article-modal-body h2{font-size:1.4rem;margin-bottom:12px;line-height:1.4}
+    .modal-meta{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;font-size:0.85rem;color:#94a3b8}
+    .article-modal-body p{line-height:1.8;color:#9ca3af;font-size:0.95rem;margin-bottom:16px}
+    .modal-tags{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+    .modal-tag{padding:3px 10px;background:#1c1c1e;border-radius:20px;font-size:0.8rem;color:#94a3b8}
+    .close-modal{padding:10px 22px;background:#374151;border:none;border-radius:8px;color:#e2e8f0;cursor:pointer;font-size:0.9rem}
+    /* Prefs panel */
+    .prefs-btn{padding:8px 14px;background:#1c1c1e;border:1px solid #374151;border-radius:8px;color:#94a3b8;cursor:pointer;font-size:0.85rem;transition:all .2s}
+    .prefs-btn:hover{border-color:#f59e0b;color:#fbbf24}
+    .empty{color:#4b5563;text-align:center;padding:40px;grid-column:1/-1}
+    .result-count{color:#94a3b8;font-size:0.85rem}
+    .toast{position:fixed;bottom:24px;right:24px;background:#f59e0b;color:#000;font-weight:600;padding:10px 18px;border-radius:10px;font-size:0.88rem;display:none;z-index:300}
+  </style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>📰 News Aggregator</h1>
+    <p>Personalized news feed — curated just for you</p>
+  </div>
+  <div class="search-bar">
+    <input type="text" id="searchInput" placeholder="Search articles..." onkeydown="if(event.key==='Enter')doSearch()" />
+    <button onclick="doSearch()">Search</button>
+  </div>
+</header>
+
+<div class="toast" id="toast"></div>
+
+<!-- Article Modal -->
+<div class="modal-bg" id="articleModal" onclick="if(event.target===this)closeModal()">
+  <div class="article-modal" id="modalContent"></div>
+</div>
+
+<div class="layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-card">
+      <h3>📂 Categories</h3>
+      <button class="cat-btn active" data-cat="" onclick="selectCategory(this,'')">All News</button>
+      <button class="cat-btn" data-cat="Technology" onclick="selectCategory(this,'Technology')">💻 Technology</button>
+      <button class="cat-btn" data-cat="Crypto" onclick="selectCategory(this,'Crypto')">🪙 Crypto</button>
+      <button class="cat-btn" data-cat="Science" onclick="selectCategory(this,'Science')">🔬 Science</button>
+      <button class="cat-btn" data-cat="Business" onclick="selectCategory(this,'Business')">📈 Business</button>
+      <button class="cat-btn" data-cat="Health" onclick="selectCategory(this,'Health')">🏥 Health</button>
+      <button class="cat-btn" data-cat="Sports" onclick="selectCategory(this,'Sports')">⚽ Sports</button>
+    </div>
+
+    <div class="sidebar-card">
+      <h3>🏷️ Trending Tags</h3>
+      <div class="tag-cloud" id="tagCloud">
+        <span class="tag-pill" onclick="toggleTag(this,'ai')">ai</span>
+        <span class="tag-pill" onclick="toggleTag(this,'bitcoin')">bitcoin</span>
+        <span class="tag-pill" onclick="toggleTag(this,'space')">space</span>
+        <span class="tag-pill" onclick="toggleTag(this,'react')">react</span>
+        <span class="tag-pill" onclick="toggleTag(this,'health')">health</span>
+        <span class="tag-pill" onclick="toggleTag(this,'ethereum')">ethereum</span>
+        <span class="tag-pill" onclick="toggleTag(this,'nasa')">nasa</span>
+        <span class="tag-pill" onclick="toggleTag(this,'climate')">climate</span>
+        <span class="tag-pill" onclick="toggleTag(this,'apple')">apple</span>
+        <span class="tag-pill" onclick="toggleTag(this,'finance')">finance</span>
+      </div>
+    </div>
+
+    <div class="sidebar-card">
+      <h3>🔖 Saved Articles</h3>
+      <div id="savedCount" style="color:#94a3b8;font-size:0.85rem">0 saved</div>
+      <button class="cat-btn" style="margin-top:10px" onclick="showSaved()">View Saved</button>
+    </div>
+  </aside>
+
+  <!-- Main Feed -->
+  <main>
+    <div class="top-bar">
+      <div>
+        <h2 id="feedTitle">All News</h2>
+        <div class="result-count" id="resultCount"></div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <div class="feed-toggle">
+          <button class="active" id="btnAll" onclick="switchFeed('all')">All</button>
+          <button id="btnPersonal" onclick="switchFeed('personal')">For You</button>
+          <button id="btnTrending" onclick="switchFeed('trending')">🔥 Trending</button>
+        </div>
+        <select id="sortSelect" onchange="loadFeed()" class="sort-bar">
+          <option value="latest">Latest</option>
+          <option value="oldest">Oldest</option>
+          <option value="readtime">Quick Reads</option>
+        </select>
+      </div>
+    </div>
+    <div class="news-grid" id="newsGrid"></div>
+  </main>
+</div>
+
+<script>
+  let currentCategory = '';
+  let activeTags = [];
+  let savedArticles = JSON.parse(localStorage.getItem('savedNews') || '[]');
+  let currentFeed = 'all';
+  let currentSearch = '';
+
+  // Preferred categories for "For You" feed
+  const preferredCategories = ['Technology', 'Science', 'Crypto'];
+
+  async function loadFeed() {
+    const sort = document.getElementById('sortSelect').value;
+    let url = `/api/news?sort=${sort}`;
+    if (currentCategory) url += `&category=${encodeURIComponent(currentCategory)}`;
+    if (activeTags.length) url += `&tags=${activeTags.join(',')}`;
+    if (currentSearch) url += `&search=${encodeURIComponent(currentSearch)}`;
+    if (currentFeed === 'trending') url += '&trending=true';
+
+    let articles;
+    if (currentFeed === 'personal') {
+      const res = await fetch('/api/feed', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ categories: preferredCategories, tags: activeTags }),
+      });
+      const data = await res.json();
+      articles = data.feed;
+    } else {
+      const res = await fetch(url);
+      const data = await res.json();
+      articles = data.articles;
+    }
+
+    renderArticles(articles);
+  }
+
+  function renderArticles(articles) {
+    const grid = document.getElementById('newsGrid');
+    document.getElementById('resultCount').textContent = `${articles.length} article${articles.length !== 1 ? 's' : ''}`;
+
+    if (articles.length === 0) {
+      grid.innerHTML = '<div class="empty">No articles found. Try a different filter.</div>';
+      return;
+    }
+
+    grid.innerHTML = articles.map(a => {
+      const isSaved = savedArticles.some(s => s.id === a.id);
+      const timeAgo = getTimeAgo(a.publishedAt);
+      return `
+        <div class="article-card" onclick="openArticle(${a.id})">
+          <img src="${a.image}" alt="${a.title}" loading="lazy" onerror="this.style.display='none'"/>
+          <div class="article-body">
+            <div class="article-meta">
+              <span class="article-cat cat-${a.category}">${a.category}</span>
+              <span class="article-source">${a.source}</span>
+              <span class="article-time">${timeAgo}</span>
+            </div>
+            <h3>${a.title}</h3>
+            <p>${a.summary}</p>
+            <div class="article-footer">
+              <span class="read-time">⏱ ${a.readTime} min read</span>
+              ${a.trending ? '<span class="trending-badge">🔥 Trending</span>' : ''}
+              <button class="bookmark-btn ${isSaved ? 'saved' : ''}" onclick="event.stopPropagation();toggleSave(${a.id})" title="${isSaved ? 'Remove bookmark' : 'Bookmark'}">
+                ${isSaved ? '🔖' : '🔖'}
+              </button>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+
+    updateSavedCount();
+  }
+
+  async function openArticle(id) {
+    const res = await fetch(`/api/news/${id}`);
+    const data = await res.json();
+    const a = data.article;
+    const isSaved = savedArticles.some(s => s.id === a.id);
+
+    document.getElementById('modalContent').innerHTML = `
+      <img src="${a.image}" alt="${a.title}" onerror="this.style.display='none'"/>
+      <div class="article-modal-body">
+        <div class="article-meta" style="margin-bottom:12px">
+          <span class="article-cat cat-${a.category}">${a.category}</span>
+          <span class="article-source">${a.source}</span>
+          ${a.trending ? '<span class="trending-badge">🔥 Trending</span>' : ''}
+        </div>
+        <h2>${a.title}</h2>
+        <div class="modal-meta">
+          <span>📅 ${new Date(a.publishedAt).toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'})}</span>
+          <span>⏱ ${a.readTime} min read</span>
+          <span>✍️ ${a.source}</span>
+        </div>
+        <p>${a.summary}</p>
+        <p style="color:#6b7280;font-size:0.85rem;font-style:italic">
+          This is a demo article. In production, connect to a real news API (e.g., NewsAPI.org) to fetch full article content.
+        </p>
+        <div class="modal-tags">${a.tags.map(t => `<span class="modal-tag">#${t}</span>`).join('')}</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="close-modal" onclick="closeModal()">✕ Close</button>
+          <button class="close-modal" style="background:${isSaved ? '#451a03' : '#1c1c1e'};color:${isSaved ? '#fbbf24' : '#94a3b8'}" onclick="toggleSave(${a.id});closeModal()">
+            ${isSaved ? '🔖 Remove Bookmark' : '🔖 Save Article'}
+          </button>
+        </div>
+      </div>`;
+
+    document.getElementById('articleModal').classList.add('open');
+  }
+
+  function closeModal() {
+    document.getElementById('articleModal').classList.remove('open');
+  }
+
+  function toggleSave(id) {
+    const article = savedArticles.find(a => a.id === id);
+    if (article) {
+      savedArticles = savedArticles.filter(a => a.id !== id);
+      showToast('Article removed from saved.');
+    } else {
+      // Find in current DOM by fetching — simpler to keep a local cache
+      fetch(`/api/news/${id}`).then(r => r.json()).then(data => {
+        savedArticles.push(data.article);
+        localStorage.setItem('savedNews', JSON.stringify(savedArticles));
+        updateSavedCount();
+      });
+      showToast('Article saved!');
+      return;
+    }
+    localStorage.setItem('savedNews', JSON.stringify(savedArticles));
+    updateSavedCount();
+    loadFeed();
+  }
+
+  function showSaved() {
+    renderArticles(savedArticles);
+    document.getElementById('feedTitle').textContent = '🔖 Saved Articles';
+    document.getElementById('resultCount').textContent = `${savedArticles.length} saved`;
+  }
+
+  function selectCategory(btn, cat) {
+    document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentCategory = cat;
+    document.getElementById('feedTitle').textContent = cat || 'All News';
+    loadFeed();
+  }
+
+  function toggleTag(el, tag) {
+    if (activeTags.includes(tag)) {
+      activeTags = activeTags.filter(t => t !== tag);
+      el.classList.remove('active');
+    } else {
+      activeTags.push(tag);
+      el.classList.add('active');
+    }
+    loadFeed();
+  }
+
+  function doSearch() {
+    currentSearch = document.getElementById('searchInput').value.trim();
+    document.getElementById('feedTitle').textContent = currentSearch ? `Results for "${currentSearch}"` : 'All News';
+    loadFeed();
+  }
+
+  function switchFeed(type) {
+    currentFeed = type;
+    document.querySelectorAll('.feed-toggle button').forEach(b => b.classList.remove('active'));
+    document.getElementById(`btn${type.charAt(0).toUpperCase() + type.slice(1)}`).classList.add('active');
+    const titles = { all: 'All News', personal: '✨ For You', trending: '🔥 Trending' };
+    document.getElementById('feedTitle').textContent = titles[type];
+    loadFeed();
+  }
+
+  function getTimeAgo(dateStr) {
+    const diff = (Date.now() - new Date(dateStr)) / 1000;
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    return `${Math.floor(diff / 86400)}d ago`;
+  }
+
+  function updateSavedCount() {
+    document.getElementById('savedCount').textContent = `${savedArticles.length} saved`;
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.style.display = 'block';
+    setTimeout(() => t.style.display = 'none', 2500);
+  }
+
+  loadFeed();
+  updateSavedCount();
+</script>
+</body>
+</html>

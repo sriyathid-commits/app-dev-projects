@@ -1,0 +1,12 @@
+{
+  "name": "blockchain-voting-system",
+  "version": "1.0.0",
+  "description": "A blockchain-based voting system with tamper-proof ledger",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
